@@ -21,7 +21,7 @@ environment:
     #  DISTUTILS_USE_SDK: "1"
     #- PYTHON: "C:\\Python34-x64"
     #  DISTUTILS_USE_SDK: "1"
-    #- PYTHON: "C:\\Python35-x64"
+    - PYTHON: "C:\\Python35-x64"
 
 install:
   # We need wheel installed to build wheels
@@ -30,7 +30,10 @@ install:
   - "%PYTHON%\\python.exe -m pip install numpy"
   - "%PYTHON%\\python.exe -m pip install nose2"
   - "%PYTHON%\\python.exe -m pip install ipython"
-  - "%PYTHON%\\python.exe -m pip install django>=1.7,<1.8"
+  - ps: |
+    if ($env:PYTHON -eq "C:\\Python27"){
+      "%PYTHON%\\python.exe -m pip install django>=1.7,<1.8"
+    }
   - "set PYTHONPATH=%PYTHONPATH%;%APPVEYOR_BUILD_FOLDER%"
 
 build_script:
