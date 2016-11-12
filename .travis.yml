@@ -28,6 +28,7 @@ install:
   - source activate build_env
   - conda install --yes numpy ipython cython pytest psutil
   - pip install "django>=1.7,<1.8"
+  - pip install Pympler
   - python build_tools/build.py
 
 # Run test

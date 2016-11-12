@@ -71,33 +71,68 @@ def bytes2human(n, format='%(value).1f %(symbol)s', symbols='customary'):
             return format % locals()
     return format % dict(symbol=symbols[0], value=n)
 
-def format_memory_info(memory_info):
-    import psutil
+def format_memory_info(memory_info, curr_proc_memory_info):
     return 'Total: %s, Available: %s, Used: %s %%, Curr process: %s' % (
-        bytes2human(memory_info.total), bytes2human(memory_info.available), memory_info.percent, format_process_memory_info(psutil.Process().memory_info()))
+        bytes2human(memory_info.total), bytes2human(memory_info.available), memory_info.percent, format_process_memory_info(curr_proc_memory_info))
 
 def format_process_memory_info(proc_memory_info):
     return bytes2human(proc_memory_info.rss)
-    
+
+DEBUG_MEMORY_INFO = True
+
+_global_collect_info = False
+
 @pytest.yield_fixture(autouse=True)
 def before_after_each_function(request):
+    global _global_collect_info
     import psutil
     current_pids = set(proc.pid for proc in psutil.process_iter())
+    before_curr_proc_memory_info = psutil.Process().memory_info()
+    
+    if _global_collect_info and DEBUG_MEMORY_INFO:
+        from pympler import summary, muppy
+        sum1 = summary.summarize(muppy.get_objects())
+    
     sys.stdout.write(
 '''
 ===============================================================================
 Memory before: %s
 %s
 ===============================================================================
-''' % (request.function, format_memory_info(psutil.virtual_memory())))
+''' % (request.function, format_memory_info(psutil.virtual_memory(), before_curr_proc_memory_info)))
     yield
     
     processes_info = []
     for proc in psutil.process_iter():
         if proc.pid not in current_pids:
             processes_info.append(
-                'New Process: %s(%s) - %s' % (proc.name(), proc.pid, format_process_memory_info(proc.memory_info())))
+                'New Process: %s(%s) - %s' % (
+                    proc.name(), 
+                    proc.pid, 
+                    format_process_memory_info(proc.memory_info(), before_curr_proc_memory_info)
+                )
+            )
     
+    after_curr_proc_memory_info = psutil.Process().memory_info()
+    
+    if DEBUG_MEMORY_INFO:
+        if after_curr_proc_memory_info.rss - before_curr_proc_memory_info.rss > 10 * 1000 * 1000:
+            # 10 MB leak
+            if _global_collect_info:
+                sum2 = summary.summarize(muppy.get_objects())
+                diff = summary.get_diff(sum1, sum2)
+                sys.stdout.write('===============================================================================\n')
+                sys.stdout.write('Leak info:\n')
+                sys.stdout.write('===============================================================================\n')
+                summary.print_(diff) 
+                sys.stdout.write('===============================================================================\n')
+            
+            _global_collect_info = True
+            # We'll only really collect the info on the next test (i.e.: if at one test
+            # we used too much memory, the next one will start collecting)
+        else:
+            _global_collect_info = False
+        
     sys.stdout.write(
 '''
 ===============================================================================
@@ -106,4 +141,8 @@ Memory after: %s
 ===============================================================================
 
 
-''' % (request.function, format_memory_info(psutil.virtual_memory()), '' if not processes_info else '\nLeaked processes:\n'+'\n'.join(processes_info)))
+''' % (
+    request.function, 
+    format_memory_info(psutil.virtual_memory(), after_curr_proc_memory_info), 
+    '' if not processes_info else '\nLeaked processes:\n'+'\n'.join(processes_info)),
+    )
