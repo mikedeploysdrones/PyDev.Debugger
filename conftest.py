@@ -71,26 +71,38 @@ def bytes2human(n, format='%(value).1f %(symbol)s', symbols='customary'):
             return format % locals()
     return format % dict(symbol=symbols[0], value=n)
 
+def format_memory_info(memory_info):
+    return 'Total: %s, Available: %s, Used: %s %%' % (
+        bytes2human(memory_info.total), bytes2human(memory_info.available), memory_info.percent)
+
+def format_process_memory_info(proc_memory_info):
+    return 'Used: %s' % (bytes2human(proc_memory_info.rss),)
+    
 @pytest.yield_fixture(autouse=True)
 def before_after_each_function(request):
     import psutil
-    memory_info = psutil.virtual_memory()
+    current_pids = set(proc.pid for proc in psutil.process_iter())
     sys.stdout.write(
 '''
 ==============================================
 Memory before: %s
-Total: %s, Used: %s %%, Available: %s
+%s
 ==============================================
-''' % (request.function, bytes2human(memory_info.total), memory_info.percent, bytes2human(memory_info.available)))
-    del memory_info
+''' % (request.function, format_memory_info(psutil.virtual_memory())))
     yield
-    memory_info = psutil.virtual_memory()
+    
+    processes_info = []
+    for proc in psutil.process_iter():
+        if proc.pid not in current_pids:
+            processes_info.append(
+                'New Process: %s(%s) - %s' % (proc.name(), proc.pid, format_process_memory_info(proc.memory_info())))
+    
     sys.stdout.write(
 '''
 ==============================================
 Memory after: %s
-Total: %s, Used: %s %%, Available: %s
+%s%s
 ==============================================
 
 
-''' % (request.function, bytes2human(memory_info.total), memory_info.percent, bytes2human(memory_info.available)))
+''' % (request.function, format_memory_info(psutil.virtual_memory()), '' if not processes_info else '\n'+'\n'.join(processes_info)))
