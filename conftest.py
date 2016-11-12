@@ -72,8 +72,9 @@ def bytes2human(n, format='%(value).1f %(symbol)s', symbols='customary'):
     return format % dict(symbol=symbols[0], value=n)
 
 def format_memory_info(memory_info):
-    return 'Total: %s, Available: %s, Used: %s %%' % (
-        bytes2human(memory_info.total), bytes2human(memory_info.available), memory_info.percent)
+    import psutil
+    return 'Total: %s, Available: %s, Used: %s %%, Curr proc: %s' % (
+        bytes2human(memory_info.total), bytes2human(memory_info.available), memory_info.percent, format_process_memory_info(psutil.Process().memory_info()))
 
 def format_process_memory_info(proc_memory_info):
     return 'Used: %s' % (bytes2human(proc_memory_info.rss),)
@@ -84,10 +85,10 @@ def before_after_each_function(request):
     current_pids = set(proc.pid for proc in psutil.process_iter())
     sys.stdout.write(
 '''
-==============================================
+===============================================================================
 Memory before: %s
 %s
-==============================================
+===============================================================================
 ''' % (request.function, format_memory_info(psutil.virtual_memory())))
     yield
     
@@ -99,10 +100,10 @@ Memory before: %s
     
     sys.stdout.write(
 '''
-==============================================
+===============================================================================
 Memory after: %s
 %s%s
-==============================================
+===============================================================================
 
 
-''' % (request.function, format_memory_info(psutil.virtual_memory()), '' if not processes_info else '\n'+'\n'.join(processes_info)))
+''' % (request.function, format_memory_info(psutil.virtual_memory()), '' if not processes_info else '\nLeaked processes:\n'+'\n'.join(processes_info)))
