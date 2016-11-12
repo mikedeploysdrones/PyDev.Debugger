@@ -73,11 +73,11 @@ def bytes2human(n, format='%(value).1f %(symbol)s', symbols='customary'):
 
 def format_memory_info(memory_info):
     import psutil
-    return 'Total: %s, Available: %s, Used: %s %%, Curr proc: %s' % (
+    return 'Total: %s, Available: %s, Used: %s %%, Curr process: %s' % (
         bytes2human(memory_info.total), bytes2human(memory_info.available), memory_info.percent, format_process_memory_info(psutil.Process().memory_info()))
 
 def format_process_memory_info(proc_memory_info):
-    return 'Used: %s' % (bytes2human(proc_memory_info.rss),)
+    return bytes2human(proc_memory_info.rss)
     
 @pytest.yield_fixture(autouse=True)
 def before_after_each_function(request):
