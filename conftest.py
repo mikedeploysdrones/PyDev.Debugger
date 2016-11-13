@@ -78,7 +78,7 @@ def format_memory_info(memory_info, curr_proc_memory_info):
 def format_process_memory_info(proc_memory_info):
     return bytes2human(proc_memory_info.rss)
 
-DEBUG_MEMORY_INFO = True
+DEBUG_MEMORY_INFO = False
 
 _global_collect_info = False
 

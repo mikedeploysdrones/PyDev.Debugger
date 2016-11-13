@@ -179,6 +179,7 @@ class DebuggerRunner(object):
             ret = self.run_process(args, writer_thread)
         finally:
             writer_thread.do_kill()
+            writer_thread.log = []
         return ret
 
     def create_process(self, args, writer_thread):
@@ -311,6 +312,7 @@ class AbstractWriterThread(threading.Thread):
         self.sock.close()
 
     def write(self, s):
+        self.log.append('write: %s' % (s,))
 
         last = self.reader_thread.last_received
         if SHOW_WRITES_AND_READS:
@@ -396,14 +398,14 @@ class AbstractWriterThread(threading.Thread):
         thread_id = splitted[1]
         frameId = splitted[7]
         if get_line:
-            self.log.append('End(0): wait_for_breakpoint_hit')
+            self.log.append('End(0): wait_for_breakpoint_hit: %s' % (last,))
             try:
                 return thread_id, frameId, int(splitted[13])
             except:
                 raise AssertionError('Error with: %s, %s, %s.\nLast: %s.\n\nAll: %s\n\nSplitted: %s' % (
                     thread_id, frameId, splitted[13], last, '\n'.join(self.reader_thread.all_received), splitted))
 
-        self.log.append('End(1): wait_for_breakpoint_hit')
+        self.log.append('End(1): wait_for_breakpoint_hit: %s' % (last,))
         return thread_id, frameId
 
     def wait_for_custom_operation(self, expected):
