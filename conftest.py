@@ -112,7 +112,7 @@ Memory before: %s
                 'New Process: %s(%s) - %s' % (
                     proc.name(), 
                     proc.pid, 
-                    format_process_memory_info(proc.memory_info(), before_curr_proc_memory_info)
+                    format_process_memory_info(proc.memory_info())
                 )
             )
     
