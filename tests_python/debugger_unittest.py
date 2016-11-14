@@ -168,14 +168,14 @@ class DebuggerRunner(object):
             while not hasattr(writer_thread, 'port'):
                 time.sleep(.01)
             self.writer_thread = writer_thread
-    
+
             args = self.get_command_line()
-    
+
             args = self.add_command_line_args(args)
-    
+
             if SHOW_OTHER_DEBUG_INFO:
                 print('executing', ' '.join(args))
-    
+
             ret = self.run_process(args, writer_thread)
         finally:
             writer_thread.do_kill()
@@ -205,17 +205,17 @@ class DebuggerRunner(object):
                         return
                     if IS_PY3K:
                         line = line.decode('utf-8')
-    
+
                     if SHOW_STDOUT:
                         sys.stdout.write('stdout: %s' % (line,))
                     buffer.append(line)
-    
+
             start_new_thread(read, (process.stdout, stdout))
-    
-    
+
+
             if SHOW_OTHER_DEBUG_INFO:
                 print('Both processes started')
-    
+
             # polls can fail (because the process may finish and the thread still not -- so, we give it some more chances to
             # finish successfully).
             check = 0
@@ -228,7 +228,7 @@ class DebuggerRunner(object):
                             if writer_thread.FORCE_KILL_PROCESS_WHEN_FINISHED_OK:
                                 process.kill()
                                 continue
-    
+
                             check += 1
                             if check == 20:
                                 print('Warning: writer thread exited and process still did not.')
@@ -240,27 +240,31 @@ class DebuggerRunner(object):
                                     stdout, stderr, writer_thread
                                 )
                 time.sleep(.2)
-    
-    
+
+
             if writer_thread is not None:
                 if not writer_thread.FORCE_KILL_PROCESS_WHEN_FINISHED_OK:
                     poll = process.poll()
                     if poll < 0:
                         self.fail_with_message(
                             "The other process exited with error code: " + str(poll), stdout, stderr, writer_thread)
-    
-    
+
+
                     if stdout is None:
                         self.fail_with_message(
                             "The other process may still be running -- and didn't give any output.", stdout, stderr, writer_thread)
-    
-                    if 'TEST SUCEEDED' not in ''.join(stdout):
-                        self.fail_with_message("TEST SUCEEDED not found in stdout.", stdout, stderr, writer_thread)
-    
+
+                    check = 0
+                    while 'TEST SUCEEDED' not in ''.join(stdout):
+                        check += 1
+                        if check == 50:
+                            self.fail_with_message("TEST SUCEEDED not found in stdout.", stdout, stderr, writer_thread)
+                        time.sleep(.1)
+
                 for _i in xrange(100):
                     if not writer_thread.finished_ok:
                         time.sleep(.1)
-    
+
                 if not writer_thread.finished_ok:
                     self.fail_with_message(
                         "The thread that was doing the tests didn't finish successfully.", stdout, stderr, writer_thread)
@@ -271,9 +275,9 @@ class DebuggerRunner(object):
 
     def fail_with_message(self, msg, stdout, stderr, writerThread):
         raise AssertionError(msg+
-            "\nStdout: \n"+'\n'.join(stdout)+
-            "\nStderr:"+'\n'.join(stderr)+
-            "\nLog:\n"+'\n'.join(getattr(writerThread, 'log', [])))
+            "\n\n===========================\nStdout: \n"+''.join(stdout)+
+            "\n\n===========================\nStderr:"+''.join(stderr)+
+            "\n\n===========================\nLog:\n"+'\n'.join(getattr(writerThread, 'log', [])))
 
 
 
