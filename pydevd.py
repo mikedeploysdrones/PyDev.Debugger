@@ -1202,7 +1202,7 @@ def _locked_settrace(
         setup = {'client': host,
                  'server': False,
                  'port': int(port),
-                 'multiproc': patch_multiprocessing,  # Used by PyCharm (reuses connection: ssh tunneling)
+                 'multiproc': False, #patch_multiprocessing,  # Used by PyCharm (reuses connection: ssh tunneling)
                  'multiprocess': patch_multiprocessing}  # Used by PyDev (creates new connection to ide)
         if SetupHolder.setup is None:
             SetupHolder.setup = setup
