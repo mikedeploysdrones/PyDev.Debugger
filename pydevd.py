@@ -1184,7 +1184,7 @@ def _locked_settrace(
         try:
             from _pydev_bundle import pydev_monkey
         except:
-            pass
+            raise
         else:
             pydev_monkey.patch_new_process_functions()
 
@@ -1196,14 +1196,18 @@ def _locked_settrace(
     global bufferStdOutToServer
     global bufferStdErrToServer
 
-    if not connected :
+    if not connected:
         pydevd_vm_type.setup_type()
 
-        setup = {'client': host,
+        setup = {'client': host,  # dispatch expects client to be set to the host address when server is False
                  'server': False,
                  'port': int(port),
                  'multiproc': False, #patch_multiprocessing,  # Used by PyCharm (reuses connection: ssh tunneling)
                  'multiprocess': patch_multiprocessing}  # Used by PyDev (creates new connection to ide)
+
+        if os.getenv('PYCHARM_DEBUG') == 'True' or os.getenv('PYDEV_DEBUG') == 'True':
+            set_debug(setup)
+
         if SetupHolder.setup is None:
             SetupHolder.setup = setup
         else:
