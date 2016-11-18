@@ -1184,7 +1184,7 @@ def _locked_settrace(
         try:
             from _pydev_bundle import pydev_monkey
         except:
-            raise
+            pass
         else:
             pydev_monkey.patch_new_process_functions()
 
