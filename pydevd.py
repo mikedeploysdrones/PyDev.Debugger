@@ -1199,6 +1199,16 @@ def _locked_settrace(
     if not connected :
         pydevd_vm_type.setup_type()
 
+        setup = {'client': None,
+                 'server': host,
+                 'port': int(port),
+                 'multiproc': patch_multiprocessing,  # Used by PyCharm (reuses connection: ssh tunneling)
+                 'multiprocess': patch_multiprocessing}  # Used by PyDev (creates new connection to ide)
+        if SetupHolder.setup is None:
+            SetupHolder.setup = setup
+        else:
+            SetupHolder.setup.update(setup)
+
         debugger = PyDB()
         debugger.connect(host, port)  # Note: connect can raise error.
 
